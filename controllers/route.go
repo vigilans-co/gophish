@@ -42,7 +42,6 @@ type AdminServer struct {
 }
 
 var defaultTLSConfig = &tls.Config{
-	PreferServerCipherSuites: true,
 	CurvePreferences: []tls.CurveID{
 		tls.X25519,
 		tls.CurveP256,
@@ -111,15 +110,15 @@ func (as *AdminServer) Start() {
 	log.Fatal(as.server.ListenAndServe())
 }
 
-// Shutdown attempts to gracefully shutdown the server.
+// Shutdown attempts to gracefully shut down the server.
 func (as *AdminServer) Shutdown() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	return as.server.Shutdown(ctx)
+	return as.server.Shutdown(ctxWithTimeout)
 }
 
 // SetupAdminRoutes creates the routes for handling requests to the web interface.
-// This function returns an http.Handler to be used in http.ListenAndServe().
+// This function returns a http.Handler to be used in http.ListenAndServe().
 func (as *AdminServer) registerRoutes() {
 	router := mux.NewRouter()
 	// Base Front-end routes
@@ -138,11 +137,11 @@ func (as *AdminServer) registerRoutes() {
 	router.HandleFunc("/webhooks", mid.Use(as.Webhooks, mid.RequirePermission(models.PermissionModifySystem), mid.RequireLogin))
 	router.HandleFunc("/impersonate", mid.Use(as.Impersonate, mid.RequirePermission(models.PermissionModifySystem), mid.RequireLogin))
 	// Create the API routes
-	api := api.NewServer(
+	apiNewServer := api.NewServer(
 		api.WithWorker(as.worker),
 		api.WithLimiter(as.limiter),
 	)
-	router.PathPrefix("/api/").Handler(api)
+	router.PathPrefix("/api/").Handler(apiNewServer)
 
 	// Setup static file serving
 	router.PathPrefix("/").Handler(http.FileServer(unindexed.Dir("./static/")))
@@ -200,49 +199,70 @@ func newTemplateParams(r *http.Request) templateParams {
 func (as *AdminServer) Base(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
 	params.Title = "Dashboard"
-	getTemplate(w, "dashboard").ExecuteTemplate(w, "base", params)
+	err := getTemplate(w, "dashboard").ExecuteTemplate(w, "base", params)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // Campaigns handles the default path and template execution
 func (as *AdminServer) Campaigns(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
 	params.Title = "Campaigns"
-	getTemplate(w, "campaigns").ExecuteTemplate(w, "base", params)
+	err := getTemplate(w, "campaigns").ExecuteTemplate(w, "base", params)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // CampaignID handles the default path and template execution
 func (as *AdminServer) CampaignID(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
 	params.Title = "Campaign Results"
-	getTemplate(w, "campaign_results").ExecuteTemplate(w, "base", params)
+	err := getTemplate(w, "campaign_results").ExecuteTemplate(w, "base", params)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // Templates handles the default path and template execution
 func (as *AdminServer) Templates(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
 	params.Title = "Email Templates"
-	getTemplate(w, "templates").ExecuteTemplate(w, "base", params)
+	err := getTemplate(w, "templates").ExecuteTemplate(w, "base", params)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // Groups handles the default path and template execution
 func (as *AdminServer) Groups(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
 	params.Title = "Users & Groups"
-	getTemplate(w, "groups").ExecuteTemplate(w, "base", params)
+	err := getTemplate(w, "groups").ExecuteTemplate(w, "base", params)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // LandingPages handles the default path and template execution
 func (as *AdminServer) LandingPages(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
 	params.Title = "Landing Pages"
-	getTemplate(w, "landing_pages").ExecuteTemplate(w, "base", params)
+	err := getTemplate(w, "landing_pages").ExecuteTemplate(w, "base", params)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // SendingProfiles handles the default path and template execution
 func (as *AdminServer) SendingProfiles(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
 	params.Title = "Sending Profiles"
-	getTemplate(w, "sending_profiles").ExecuteTemplate(w, "base", params)
+	err := getTemplate(w, "sending_profiles").ExecuteTemplate(w, "base", params)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // Settings handles the changing of settings
@@ -252,8 +272,14 @@ func (as *AdminServer) Settings(w http.ResponseWriter, r *http.Request) {
 		params := newTemplateParams(r)
 		params.Title = "Settings"
 		session := ctx.Get(r, "session").(*sessions.Session)
-		session.Save(r, w)
-		getTemplate(w, "settings").ExecuteTemplate(w, "base", params)
+		err := session.Save(r, w)
+		if err != nil {
+			log.Error(err)
+		}
+		err = getTemplate(w, "settings").ExecuteTemplate(w, "base", params)
+		if err != nil {
+			log.Error(err)
+		}
 	case r.Method == "POST":
 		u := ctx.Get(r, "user").(models.User)
 		currentPw := r.FormValue("current_password")
@@ -275,7 +301,7 @@ func (as *AdminServer) Settings(w http.ResponseWriter, r *http.Request) {
 			api.JSONResponse(w, msg, http.StatusBadRequest)
 			return
 		}
-		u.Hash = string(newHash)
+		u.Hash = newHash
 		if err = models.PutUser(&u); err != nil {
 			msg.Message = err.Error()
 			msg.Success = false
@@ -291,14 +317,17 @@ func (as *AdminServer) Settings(w http.ResponseWriter, r *http.Request) {
 func (as *AdminServer) UserManagement(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
 	params.Title = "User Management"
-	getTemplate(w, "users").ExecuteTemplate(w, "base", params)
+	err := getTemplate(w, "users").ExecuteTemplate(w, "base", params)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 func (as *AdminServer) nextOrIndex(w http.ResponseWriter, r *http.Request) {
 	next := "/"
-	url, err := url.Parse(r.FormValue("next"))
+	urlNext, err := url.Parse(r.FormValue("next"))
 	if err == nil {
-		path := url.EscapedPath()
+		path := urlNext.EscapedPath()
 		if path != "" {
 			next = "/" + strings.TrimLeft(path, "/")
 		}
@@ -316,25 +345,34 @@ func (as *AdminServer) handleInvalidLogin(w http.ResponseWriter, r *http.Request
 		Token   string
 	}{Title: "Login", Token: csrf.Token(r)}
 	params.Flashes = session.Flashes()
-	session.Save(r, w)
+	err := session.Save(r, w)
+	if err != nil {
+		log.Error(err)
+	}
 	templates := template.New("template")
-	_, err := templates.ParseFiles("templates/login.html", "templates/flashes.html")
+	_, err = templates.ParseFiles("templates/login.html", "templates/flashes.html")
 	if err != nil {
 		log.Error(err)
 	}
 	// w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusUnauthorized)
-	template.Must(templates, err).ExecuteTemplate(w, "base", params)
+	err = template.Must(templates, err).ExecuteTemplate(w, "base", params)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // Webhooks is an admin-only handler that handles webhooks
 func (as *AdminServer) Webhooks(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
 	params.Title = "Webhooks"
-	getTemplate(w, "webhooks").ExecuteTemplate(w, "base", params)
+	err := getTemplate(w, "webhooks").ExecuteTemplate(w, "base", params)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
-// Impersonate allows an admin to login to a user account without needing the password
+// Impersonate allows an admin to log in to a user account without needing the password
 func (as *AdminServer) Impersonate(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
@@ -347,7 +385,10 @@ func (as *AdminServer) Impersonate(w http.ResponseWriter, r *http.Request) {
 		}
 		session := ctx.Get(r, "session").(*sessions.Session)
 		session.Values["id"] = u.Id
-		session.Save(r, w)
+		err = session.Save(r, w)
+		if err != nil {
+			log.Error(err)
+		}
 	}
 	http.Redirect(w, r, "/", http.StatusFound)
 }
@@ -365,13 +406,19 @@ func (as *AdminServer) Login(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.Method == "GET":
 		params.Flashes = session.Flashes()
-		session.Save(r, w)
-		templates := template.New("template")
-		_, err := templates.ParseFiles("templates/login.html", "templates/flashes.html")
+		err := session.Save(r, w)
 		if err != nil {
 			log.Error(err)
 		}
-		template.Must(templates, err).ExecuteTemplate(w, "base", params)
+		templates := template.New("template")
+		_, err = templates.ParseFiles("templates/login.html", "templates/flashes.html")
+		if err != nil {
+			log.Error(err)
+		}
+		err = template.Must(templates, err).ExecuteTemplate(w, "base", params)
+		if err != nil {
+			log.Error(err)
+		}
 	case r.Method == "POST":
 		// Find the user with the provided username
 		username, password := r.FormValue("username"), r.FormValue("password")
@@ -399,7 +446,10 @@ func (as *AdminServer) Login(w http.ResponseWriter, r *http.Request) {
 		}
 		// If we've logged in, save the session and redirect to the dashboard
 		session.Values["id"] = u.Id
-		session.Save(r, w)
+		err = session.Save(r, w)
+		if err != nil {
+			log.Error(err)
+		}
 		as.nextOrIndex(w, r)
 	}
 }
@@ -409,7 +459,10 @@ func (as *AdminServer) Logout(w http.ResponseWriter, r *http.Request) {
 	session := ctx.Get(r, "session").(*sessions.Session)
 	delete(session.Values, "id")
 	Flash(w, r, "success", "You have successfully logged out")
-	session.Save(r, w)
+	err := session.Save(r, w)
+	if err != nil {
+		log.Error(err)
+	}
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
@@ -430,7 +483,10 @@ func (as *AdminServer) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	session := ctx.Get(r, "session").(*sessions.Session)
 	if !u.PasswordChangeRequired {
 		Flash(w, r, "info", "Please reset your password through the settings page")
-		session.Save(r, w)
+		err := session.Save(r, w)
+		if err != nil {
+			log.Error(err)
+		}
 		http.Redirect(w, r, "/settings", http.StatusTemporaryRedirect)
 		return
 	}
@@ -439,8 +495,14 @@ func (as *AdminServer) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.Method == http.MethodGet:
 		params.Flashes = session.Flashes()
-		session.Save(r, w)
-		getTemplate(w, "reset_password").ExecuteTemplate(w, "base", params)
+		err := session.Save(r, w)
+		if err != nil {
+			log.Error(err)
+		}
+		err = getTemplate(w, "reset_password").ExecuteTemplate(w, "base", params)
+		if err != nil {
+			log.Error(err)
+		}
 		return
 	case r.Method == http.MethodPost:
 		newPassword := r.FormValue("password")
@@ -449,9 +511,15 @@ func (as *AdminServer) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			Flash(w, r, "danger", err.Error())
 			params.Flashes = session.Flashes()
-			session.Save(r, w)
+			err := session.Save(r, w)
+			if err != nil {
+				log.Error(err)
+			}
 			w.WriteHeader(http.StatusBadRequest)
-			getTemplate(w, "reset_password").ExecuteTemplate(w, "base", params)
+			err = getTemplate(w, "reset_password").ExecuteTemplate(w, "base", params)
+			if err != nil {
+				log.Error(err)
+			}
 			return
 		}
 		u.PasswordChangeRequired = false
@@ -459,9 +527,15 @@ func (as *AdminServer) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		if err = models.PutUser(&u); err != nil {
 			Flash(w, r, "danger", err.Error())
 			params.Flashes = session.Flashes()
-			session.Save(r, w)
+			err := session.Save(r, w)
+			if err != nil {
+				log.Error(err)
+			}
 			w.WriteHeader(http.StatusInternalServerError)
-			getTemplate(w, "reset_password").ExecuteTemplate(w, "base", params)
+			err = getTemplate(w, "reset_password").ExecuteTemplate(w, "base", params)
+			if err != nil {
+				log.Error(err)
+			}
 			return
 		}
 		// TODO: We probably want to flash a message here that the password was
@@ -476,7 +550,7 @@ func (as *AdminServer) ResetPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 // TODO: Make this execute the template, too
-func getTemplate(w http.ResponseWriter, tmpl string) *template.Template {
+func getTemplate(_ http.ResponseWriter, tmpl string) *template.Template {
 	templates := template.New("template")
 	_, err := templates.ParseFiles("templates/base.html", "templates/nav.html", "templates/"+tmpl+".html", "templates/flashes.html")
 	if err != nil {
@@ -486,7 +560,7 @@ func getTemplate(w http.ResponseWriter, tmpl string) *template.Template {
 }
 
 // Flash handles the rendering flash messages
-func Flash(w http.ResponseWriter, r *http.Request, t string, m string) {
+func Flash(_ http.ResponseWriter, r *http.Request, t string, m string) {
 	session := ctx.Get(r, "session").(*sessions.Session)
 	session.AddFlash(models.Flash{
 		Type:    t,
