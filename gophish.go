@@ -27,7 +27,6 @@ THE SOFTWARE.
 */
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -60,7 +59,7 @@ var (
 func main() {
 	// Load the version
 
-	version, err := ioutil.ReadFile("./VERSION")
+	version, err := os.ReadFile("./VERSION")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -95,7 +94,7 @@ func main() {
 	}
 
 	// Provide the option to disable the built-in mailer
-	// Setup the global variables and settings
+	// Set up the global variables and settings
 	err = models.Setup(conf)
 	if err != nil {
 		log.Fatal(err)
@@ -109,7 +108,7 @@ func main() {
 	}
 
 	// Create our servers
-	adminOptions := []controllers.AdminServerOption{}
+	var adminOptions []controllers.AdminServerOption
 	if *disableMailer {
 		adminOptions = append(adminOptions, controllers.WithWorker(nil))
 	}
@@ -123,7 +122,12 @@ func main() {
 	imapMonitor := imap.NewMonitor()
 	if *mode == "admin" || *mode == "all" {
 		go adminServer.Start()
-		go imapMonitor.Start()
+		go func() {
+			err := imapMonitor.Start()
+			if err != nil {
+				log.Error(err)
+			}
+		}()
 	}
 	if *mode == "phish" || *mode == "all" {
 		go phishServer.Start()
@@ -135,11 +139,20 @@ func main() {
 	<-c
 	log.Info("CTRL+C Received... Gracefully shutting down servers")
 	if *mode == modeAdmin || *mode == modeAll {
-		adminServer.Shutdown()
-		imapMonitor.Shutdown()
+		err := adminServer.Shutdown()
+		if err != nil {
+			log.Error(err)
+		}
+		errImap := imapMonitor.Shutdown()
+		if errImap != nil {
+			log.Error(errImap)
+		}
 	}
 	if *mode == modePhish || *mode == modeAll {
-		phishServer.Shutdown()
+		err := phishServer.Shutdown()
+		if err != nil {
+			log.Error(err)
+		}
 	}
 
 }
