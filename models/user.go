@@ -35,7 +35,7 @@ func GetUser(id int64) (User, error) {
 
 // GetUsers returns the users registered in Gophish
 func GetUsers() ([]User, error) {
-	us := []User{}
+	var us []User
 	err := db.Preload("Role").Find(&us).Error
 	return us, err
 }

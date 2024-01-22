@@ -90,7 +90,7 @@ func (p *Page) Validate() error {
 
 // GetPages returns the pages owned by the given user.
 func GetPages(uid int64) ([]Page, error) {
-	ps := []Page{}
+	var ps []Page
 	err := db.Where("user_id=?", uid).Find(&ps).Error
 	if err != nil {
 		log.Error(err)

@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	log "github.com/gophish/gophish/logger"
 	"testing"
 
 	"github.com/jinzhu/gorm"
@@ -10,7 +11,7 @@ import (
 
 func (s *ModelsSuite) TestPostGroup(c *check.C) {
 	g := Group{Name: "Test Group"}
-	g.Targets = []Target{Target{BaseRecipient: BaseRecipient{Email: "test@example.com"}}}
+	g.Targets = []Target{{BaseRecipient: BaseRecipient{Email: "test@example.com"}}}
 	g.UserId = 1
 	err := PostGroup(&g)
 	c.Assert(err, check.Equals, nil)
@@ -20,7 +21,7 @@ func (s *ModelsSuite) TestPostGroup(c *check.C) {
 
 func (s *ModelsSuite) TestPostGroupNoName(c *check.C) {
 	g := Group{Name: ""}
-	g.Targets = []Target{Target{BaseRecipient: BaseRecipient{Email: "test@example.com"}}}
+	g.Targets = []Target{{BaseRecipient: BaseRecipient{Email: "test@example.com"}}}
 	g.UserId = 1
 	err := PostGroup(&g)
 	c.Assert(err, check.Equals, ErrGroupNameNotSpecified)
@@ -36,24 +37,30 @@ func (s *ModelsSuite) TestPostGroupNoTargets(c *check.C) {
 
 func (s *ModelsSuite) TestGetGroups(c *check.C) {
 	// Add groups.
-	PostGroup(&Group{
+	err := PostGroup(&Group{
 		Name: "Test Group 1",
 		Targets: []Target{
-			Target{
+			{
 				BaseRecipient: BaseRecipient{Email: "test1@example.com"},
 			},
 		},
 		UserId: 1,
 	})
-	PostGroup(&Group{
+	if err != nil {
+		log.Error(err)
+	}
+	err = PostGroup(&Group{
 		Name: "Test Group 2",
 		Targets: []Target{
-			Target{
+			{
 				BaseRecipient: BaseRecipient{Email: "test2@example.com"},
 			},
 		},
 		UserId: 1,
 	})
+	if err != nil {
+		log.Error(err)
+	}
 
 	// Get groups and test result.
 	groups, err := GetGroups(1)
@@ -78,7 +85,7 @@ func (s *ModelsSuite) TestGetGroup(c *check.C) {
 	originalGroup := &Group{
 		Name: "Test Group",
 		Targets: []Target{
-			Target{
+			{
 				BaseRecipient: BaseRecipient{Email: "test@example.com"},
 			},
 		},
@@ -101,15 +108,18 @@ func (s *ModelsSuite) TestGetGroupNoGroups(c *check.C) {
 
 func (s *ModelsSuite) TestGetGroupByName(c *check.C) {
 	// Add group.
-	PostGroup(&Group{
+	err := PostGroup(&Group{
 		Name: "Test Group",
 		Targets: []Target{
-			Target{
+			{
 				BaseRecipient: BaseRecipient{Email: "test@example.com"},
 			},
 		},
 		UserId: 1,
 	})
+	if err != nil {
+		log.Error(err)
+	}
 
 	// Get group and test result.
 	group, err := GetGroupByName("Test Group", 1)
@@ -128,15 +138,18 @@ func (s *ModelsSuite) TestPutGroup(c *check.C) {
 	// Add test group.
 	group := Group{Name: "Test Group"}
 	group.Targets = []Target{
-		Target{BaseRecipient: BaseRecipient{Email: "test1@example.com", FirstName: "First", LastName: "Example"}},
-		Target{BaseRecipient: BaseRecipient{Email: "test2@example.com", FirstName: "Second", LastName: "Example"}},
+		{BaseRecipient: BaseRecipient{Email: "test1@example.com", FirstName: "First", LastName: "Example"}},
+		{BaseRecipient: BaseRecipient{Email: "test2@example.com", FirstName: "Second", LastName: "Example"}},
 	}
 	group.UserId = 1
-	PostGroup(&group)
+	err := PostGroup(&group)
+	if err != nil {
+		log.Error(err)
+	}
 
 	// Update one of group's targets.
 	group.Targets[0].FirstName = "Updated"
-	err := PutGroup(&group)
+	err = PutGroup(&group)
 	c.Assert(err, check.Equals, nil)
 
 	// Verify updated target information.
@@ -153,15 +166,18 @@ func (s *ModelsSuite) TestPutGroupEmptyAttribute(c *check.C) {
 	// Add test group.
 	group := Group{Name: "Test Group"}
 	group.Targets = []Target{
-		Target{BaseRecipient: BaseRecipient{Email: "test1@example.com", FirstName: "First", LastName: "Example"}},
-		Target{BaseRecipient: BaseRecipient{Email: "test2@example.com", FirstName: "Second", LastName: "Example"}},
+		{BaseRecipient: BaseRecipient{Email: "test1@example.com", FirstName: "First", LastName: "Example"}},
+		{BaseRecipient: BaseRecipient{Email: "test2@example.com", FirstName: "Second", LastName: "Example"}},
 	}
 	group.UserId = 1
-	PostGroup(&group)
+	err := PostGroup(&group)
+	if err != nil {
+		log.Error(err)
+	}
 
 	// Update one of group's targets.
 	group.Targets[0].FirstName = ""
-	err := PutGroup(&group)
+	err = PutGroup(&group)
 	c.Assert(err, check.Equals, nil)
 
 	// Verify updated empty attribute was saved.

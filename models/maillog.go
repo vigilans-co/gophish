@@ -66,7 +66,10 @@ func (m *MailLog) Backoff(reason error) error {
 		return err
 	}
 	if m.SendAttempt == MaxSendAttempts {
-		r.HandleEmailError(ErrMaxSendAttempts)
+		err := r.HandleEmailError(ErrMaxSendAttempts)
+		if err != nil {
+			log.Error(err)
+		}
 		return ErrMaxSendAttempts
 	}
 	// Add an error, since we had to backoff because of a
@@ -265,7 +268,7 @@ func (m *MailLog) Generate(msg *gomail.Message) error {
 
 // GetQueuedMailLogs returns the mail logs that are queued up for the given minute.
 func GetQueuedMailLogs(t time.Time) ([]*MailLog, error) {
-	ms := []*MailLog{}
+	var ms []*MailLog
 	err := db.Where("send_date <= ? AND processing = ?", t, false).
 		Find(&ms).Error
 	if err != nil {
@@ -274,9 +277,9 @@ func GetQueuedMailLogs(t time.Time) ([]*MailLog, error) {
 	return ms, err
 }
 
-// GetMailLogsByCampaign returns all of the mail logs for a given campaign.
+// GetMailLogsByCampaign returns all the mail logs for a given campaign.
 func GetMailLogsByCampaign(cid int64) ([]*MailLog, error) {
-	ms := []*MailLog{}
+	var ms []*MailLog
 	err := db.Where("campaign_id = ?", cid).Find(&ms).Error
 	return ms, err
 }

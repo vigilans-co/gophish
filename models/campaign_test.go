@@ -2,10 +2,11 @@ package models
 
 import (
 	"fmt"
+	log "github.com/gophish/gophish/logger"
 	"testing"
 	"time"
 
-	check "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 func (s *ModelsSuite) TestGenerateSendDate(c *check.C) {
@@ -204,8 +205,11 @@ func setupCampaign(b *testing.B, size int) Campaign {
 	campaign.Template = Template{Name: "Test Template"}
 	campaign.Page = Page{Name: "Test Page"}
 	campaign.SMTP = SMTP{Name: "Test Page"}
-	campaign.Groups = []Group{Group{Name: "Test Group"}}
-	PostCampaign(&campaign, 1)
+	campaign.Groups = []Group{{Name: "Test Group"}}
+	err := PostCampaign(&campaign, 1)
+	if err != nil {
+		log.Error(err)
+	}
 	return campaign
 }
 
@@ -219,7 +223,7 @@ func BenchmarkCampaign100(b *testing.B) {
 		campaign.Template = Template{Name: "Test Template"}
 		campaign.Page = Page{Name: "Test Page"}
 		campaign.SMTP = SMTP{Name: "Test Page"}
-		campaign.Groups = []Group{Group{Name: "Test Group"}}
+		campaign.Groups = []Group{{Name: "Test Group"}}
 
 		b.StartTimer()
 		err := PostCampaign(&campaign, 1)
@@ -244,7 +248,7 @@ func BenchmarkCampaign1000(b *testing.B) {
 		campaign.Template = Template{Name: "Test Template"}
 		campaign.Page = Page{Name: "Test Page"}
 		campaign.SMTP = SMTP{Name: "Test Page"}
-		campaign.Groups = []Group{Group{Name: "Test Group"}}
+		campaign.Groups = []Group{{Name: "Test Group"}}
 
 		b.StartTimer()
 		err := PostCampaign(&campaign, 1)
@@ -269,7 +273,7 @@ func BenchmarkCampaign10000(b *testing.B) {
 		campaign.Template = Template{Name: "Test Template"}
 		campaign.Page = Page{Name: "Test Page"}
 		campaign.SMTP = SMTP{Name: "Test Page"}
-		campaign.Groups = []Group{Group{Name: "Test Group"}}
+		campaign.Groups = []Group{{Name: "Test Group"}}
 
 		b.StartTimer()
 		err := PostCampaign(&campaign, 1)

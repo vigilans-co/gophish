@@ -1,6 +1,7 @@
 package models
 
 import (
+	log "github.com/gophish/gophish/logger"
 	"net/mail"
 	"regexp"
 	"time"
@@ -10,7 +11,10 @@ import (
 
 func (s *ModelsSuite) TestGenerateResultId(c *check.C) {
 	r := Result{}
-	r.GenerateId(db)
+	err := r.GenerateId(db)
+	if err != nil {
+		log.Error(err)
+	}
 	match, err := regexp.Match("[a-zA-Z0-9]{7}", []byte(r.RId))
 	c.Assert(err, check.Equals, nil)
 	c.Assert(match, check.Equals, true)
@@ -78,9 +82,9 @@ func (s *ModelsSuite) TestResultVariableStatus(ch *check.C) {
 func (s *ModelsSuite) TestDuplicateResults(ch *check.C) {
 	group := Group{Name: "Test Group"}
 	group.Targets = []Target{
-		Target{BaseRecipient: BaseRecipient{Email: "test1@example.com", FirstName: "First", LastName: "Example"}},
-		Target{BaseRecipient: BaseRecipient{Email: "test1@example.com", FirstName: "Duplicate", LastName: "Duplicate"}},
-		Target{BaseRecipient: BaseRecipient{Email: "test2@example.com", FirstName: "Second", LastName: "Example"}},
+		{BaseRecipient: BaseRecipient{Email: "test1@example.com", FirstName: "First", LastName: "Example"}},
+		{BaseRecipient: BaseRecipient{Email: "test1@example.com", FirstName: "Duplicate", LastName: "Duplicate"}},
+		{BaseRecipient: BaseRecipient{Email: "test2@example.com", FirstName: "Second", LastName: "Example"}},
 	}
 	group.UserId = 1
 	ch.Assert(PostGroup(&group), check.Equals, nil)

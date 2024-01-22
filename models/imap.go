@@ -52,10 +52,6 @@ var ErrIMAPUsernameNotSpecified = errors.New("No Username specified")
 // in the IMAP configuration
 var ErrIMAPPasswordNotSpecified = errors.New("No Password specified")
 
-// ErrInvalidIMAPFreq is thrown when the frequency for polling the
-// IMAP server is invalid
-var ErrInvalidIMAPFreq = errors.New("Invalid polling frequency")
-
 // TableName specifies the database tablename for Gorm to use
 func (im IMAP) TableName() string {
 	return "imap"
@@ -102,7 +98,7 @@ func (im *IMAP) Validate() error {
 
 // GetIMAP returns the IMAP server owned by the given user.
 func GetIMAP(uid int64) ([]IMAP, error) {
-	im := []IMAP{}
+	var im []IMAP
 	count := 0
 	err := db.Where("user_id=?", uid).Find(&im).Count(&count).Error
 

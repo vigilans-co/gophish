@@ -74,7 +74,7 @@ func GetRoleBySlug(slug string) (Role, error) {
 // HasPermission checks to see if the user has a role with the requested
 // permission.
 func (u *User) HasPermission(slug string) (bool, error) {
-	perm := []Permission{}
+	var perm []Permission
 	err := db.Model(Role{ID: u.RoleID}).Where("slug=?", slug).Association("Permissions").Find(&perm).Error
 	if err != nil {
 		return false, err

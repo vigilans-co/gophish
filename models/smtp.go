@@ -59,7 +59,7 @@ type Header struct {
 var ErrFromAddressNotSpecified = errors.New("No From Address specified")
 
 // ErrInvalidFromAddress is thrown when the SMTP From field in the sending
-// profiles containes a value that is not an email address
+// profiles contains a value that is not an email address
 var ErrInvalidFromAddress = errors.New("Invalid SMTP From address because it is not an email address")
 
 // ErrHostNotSpecified is thrown when there is no Host specified
@@ -69,7 +69,7 @@ var ErrHostNotSpecified = errors.New("No SMTP Host specified")
 // ErrInvalidHost indicates that the SMTP server string is invalid
 var ErrInvalidHost = errors.New("Invalid SMTP server address")
 
-// TableName specifies the database tablename for Gorm to use
+// TableName specifies the database table-name for Gorm to use
 func (s SMTP) TableName() string {
 	return "smtp"
 }
@@ -104,27 +104,27 @@ func (s *SMTP) Validate() error {
 
 // validateFromAddress validates
 func validateFromAddress(email string) bool {
-	r, _ := regexp.Compile("^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,18})$")
+	r, _ := regexp.Compile("^([a-zA-Z0-9_\\-.]+)@([a-zA-Z0-9_\\-.]+)\\.([a-zA-Z]{2,18})$")
 	return r.MatchString(email)
 }
 
 // GetDialer returns a dialer for the given SMTP profile
 func (s *SMTP) GetDialer() (mailer.Dialer, error) {
-	// Setup the message and dial
+	// Set up the message and dial
 	hp := strings.Split(s.Host, ":")
 	if len(hp) < 2 {
 		hp = append(hp, "25")
 	}
 	host := hp[0]
 	// Any issues should have been caught in validation, but we'll
-	// double check here.
+	// double-check here.
 	port, err := strconv.Atoi(hp[1])
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	dialer := dialer.Dialer()
-	d := gomail.NewWithDialer(dialer, host, port, s.Username, s.Password)
+	dialerNew := dialer.Dialer()
+	d := gomail.NewWithDialer(dialerNew, host, port, s.Username, s.Password)
 	d.TLSConfig = &tls.Config{
 		ServerName:         host,
 		InsecureSkipVerify: s.IgnoreCertErrors,
@@ -140,7 +140,7 @@ func (s *SMTP) GetDialer() (mailer.Dialer, error) {
 
 // GetSMTPs returns the SMTPs owned by the given user.
 func GetSMTPs(uid int64) ([]SMTP, error) {
-	ss := []SMTP{}
+	var ss []SMTP
 	err := db.Where("user_id=?", uid).Find(&ss).Error
 	if err != nil {
 		log.Error(err)
@@ -148,7 +148,7 @@ func GetSMTPs(uid int64) ([]SMTP, error) {
 	}
 	for i := range ss {
 		err = db.Where("smtp_id=?", ss[i].Id).Find(&ss[i].Headers).Error
-		if err != nil && err != gorm.ErrRecordNotFound {
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Error(err)
 			return ss, err
 		}
@@ -165,7 +165,7 @@ func GetSMTP(id int64, uid int64) (SMTP, error) {
 		return s, err
 	}
 	err = db.Where("smtp_id=?", s.Id).Find(&s.Headers).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Error(err)
 		return s, err
 	}
@@ -181,7 +181,7 @@ func GetSMTPByName(n string, uid int64) (SMTP, error) {
 		return s, err
 	}
 	err = db.Where("smtp_id=?", s.Id).Find(&s.Headers).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Error(err)
 	}
 	return s, err
@@ -212,7 +212,7 @@ func PostSMTP(s *SMTP) error {
 }
 
 // PutSMTP edits an existing SMTP in the database.
-// Per the PUT Method RFC, it presumes all data for a SMTP is provided.
+// Per the PUT Method RFC, it presumes all data for an SMTP is provided.
 func PutSMTP(s *SMTP) error {
 	err := s.Validate()
 	if err != nil {
@@ -225,7 +225,7 @@ func PutSMTP(s *SMTP) error {
 	}
 	// Delete all custom headers, and replace with new ones
 	err = db.Where("smtp_id=?", s.Id).Delete(&Header{}).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Error(err)
 		return err
 	}
@@ -242,7 +242,7 @@ func PutSMTP(s *SMTP) error {
 }
 
 // DeleteSMTP deletes an existing SMTP in the database.
-// An error is returned if a SMTP with the given user id and SMTP id is not found.
+// An error is returned if an SMTP with the given user id and SMTP id is not found.
 func DeleteSMTP(id int64, uid int64) error {
 	// Delete all custom headers
 	err := db.Where("smtp_id=?", id).Delete(&Header{}).Error

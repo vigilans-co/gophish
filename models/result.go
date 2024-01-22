@@ -3,6 +3,7 @@ package models
 import (
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"math/big"
 	"net"
 	"time"
@@ -47,7 +48,10 @@ func (r *Result) createEvent(status string, details interface{}) (*Event, error)
 		}
 		e.Details = string(dj)
 	}
-	AddEvent(e, r.CampaignId)
+	err := AddEvent(e, r.CampaignId)
+	if err != nil {
+		log.Error(err)
+	}
 	return e, nil
 }
 
@@ -155,7 +159,12 @@ func (r *Result) UpdateGeo(addr string) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer mmdb.Close()
+	defer func(mmdb *maxminddb.Reader) {
+		err := mmdb.Close()
+		if err != nil {
+			log.Error(err)
+		}
+	}(mmdb)
 	ip := net.ParseIP(addr)
 	var city mmCity
 	// Get the record
@@ -194,7 +203,7 @@ func (r *Result) GenerateId(tx *gorm.DB) error {
 		}
 		r.RId = rid
 		err = tx.Table("results").Where("r_id=?", r.RId).First(&Result{}).Error
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			break
 		}
 	}

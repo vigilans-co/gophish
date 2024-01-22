@@ -12,7 +12,7 @@ import (
 )
 
 // Group contains the fields needed for a user -> group mapping
-// Groups contain 1..* Targets
+// Groups contain 1...* Targets
 type Group struct {
 	Id           int64     `json:"id"`
 	UserId       int64     `json:"-"`
@@ -37,14 +37,14 @@ type GroupSummary struct {
 	NumTargets   int64     `json:"num_targets"`
 }
 
-// GroupTarget is used for a many-to-many relationship between 1..* Groups and 1..* Targets
+// GroupTarget is used for a many-to-many relationship between 1...* Groups and 1..* Targets
 type GroupTarget struct {
 	GroupId  int64 `json:"-"`
 	TargetId int64 `json:"-"`
 }
 
 // Target contains the fields needed for individual targets specified by the user
-// Groups contain 1..* Targets, but 1 Target may belong to 1..* Groups
+// Groups contain 1...* Targets, but 1 Target may belong to 1...* Groups
 type Target struct {
 	Id int64 `json:"-"`
 	BaseRecipient
@@ -107,7 +107,7 @@ func (g *Group) Validate() error {
 
 // GetGroups returns the groups owned by the given user.
 func GetGroups(uid int64) ([]Group, error) {
-	gs := []Group{}
+	var gs []Group
 	err := db.Where("user_id=?", uid).Find(&gs).Error
 	if err != nil {
 		log.Error(err)
@@ -358,7 +358,7 @@ func UpdateTarget(tx *gorm.DB, target Target) error {
 
 // GetTargets performs a many-to-many select to get all the Targets for a Group
 func GetTargets(gid int64) ([]Target, error) {
-	ts := []Target{}
+	var ts []Target
 	err := db.Table("targets").Select("targets.id, targets.email, targets.first_name, targets.last_name, targets.position").Joins("left join group_targets gt ON targets.id = gt.target_id").Where("gt.group_id=?", gid).Scan(&ts).Error
 	return ts, err
 }

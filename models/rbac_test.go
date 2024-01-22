@@ -2,8 +2,9 @@ package models
 
 import (
 	"fmt"
+	log "github.com/gophish/gophish/logger"
 
-	check "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 type PermissionCheck map[string]bool
@@ -11,12 +12,12 @@ type PermissionCheck map[string]bool
 func (s *ModelsSuite) TestHasPermission(c *check.C) {
 
 	permissionTests := map[string]PermissionCheck{
-		RoleAdmin: PermissionCheck{
+		RoleAdmin: {
 			PermissionModifySystem:  true,
 			PermissionModifyObjects: true,
 			PermissionViewObjects:   true,
 		},
-		RoleUser: PermissionCheck{
+		RoleUser: {
 			PermissionModifySystem:  false,
 			PermissionModifyObjects: true,
 			PermissionViewObjects:   true,
@@ -33,7 +34,10 @@ func (s *ModelsSuite) TestHasPermission(c *check.C) {
 			ApiKey:   fmt.Sprintf("%s-key", r),
 			RoleID:   role.ID,
 		}
-		PutUser(&user)
+		err = PutUser(&user)
+		if err != nil {
+			log.Error(err)
+		}
 
 		// Perform the permission checks
 		for permission, expected := range checks {

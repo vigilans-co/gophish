@@ -58,7 +58,7 @@ func (t *Template) Validate() error {
 
 // GetTemplates returns the templates owned by the given user.
 func GetTemplates(uid int64) ([]Template, error) {
-	ts := []Template{}
+	var ts []Template
 	err := db.Where("user_id=?", uid).Find(&ts).Error
 	if err != nil {
 		log.Error(err)
@@ -70,7 +70,7 @@ func GetTemplates(uid int64) ([]Template, error) {
 		if err == nil && len(ts[i].Attachments) == 0 {
 			ts[i].Attachments = make([]Attachment, 0)
 		}
-		if err != nil && err != gorm.ErrRecordNotFound {
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Error(err)
 			return ts, err
 		}
@@ -89,7 +89,7 @@ func GetTemplate(id int64, uid int64) (Template, error) {
 
 	// Get Attachments
 	err = db.Where("template_id=?", t.Id).Find(&t.Attachments).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Error(err)
 		return t, err
 	}
@@ -110,7 +110,7 @@ func GetTemplateByName(n string, uid int64) (Template, error) {
 
 	// Get Attachments
 	err = db.Where("template_id=?", t.Id).Find(&t.Attachments).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Error(err)
 		return t, err
 	}
@@ -152,11 +152,11 @@ func PutTemplate(t *Template) error {
 	}
 	// Delete all attachments, and replace with new ones
 	err := db.Where("template_id=?", t.Id).Delete(&Attachment{}).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Error(err)
 		return err
 	}
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		err = nil
 	}
 	for i := range t.Attachments {

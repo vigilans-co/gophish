@@ -5,7 +5,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 
-	check "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 func (s *ModelsSuite) TestPostSMTP(c *check.C) {
@@ -71,8 +71,8 @@ func (s *ModelsSuite) TestPostSMTPValidHeader(c *check.C) {
 		FromAddress: "foo@example.com",
 		UserId:      1,
 		Headers: []Header{
-			Header{Key: "Reply-To", Value: "test@example.com"},
-			Header{Key: "X-Mailer", Value: "gophish"},
+			{Key: "Reply-To", Value: "test@example.com"},
+			{Key: "X-Mailer", Value: "gophish"},
 		},
 	}
 	err := PostSMTP(&smtp)

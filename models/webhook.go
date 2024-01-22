@@ -23,14 +23,14 @@ var ErrNameNotSpecified = errors.New("Name can't be empty")
 
 // GetWebhooks returns the webhooks
 func GetWebhooks() ([]Webhook, error) {
-	whs := []Webhook{}
+	var whs []Webhook
 	err := db.Find(&whs).Error
 	return whs, err
 }
 
 // GetActiveWebhooks returns the active webhooks
 func GetActiveWebhooks() ([]Webhook, error) {
-	whs := []Webhook{}
+	var whs []Webhook
 	err := db.Where("is_active=?", true).Find(&whs).Error
 	return whs, err
 }

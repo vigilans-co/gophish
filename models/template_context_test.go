@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 
-	check "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 type mockTemplateContext struct {
