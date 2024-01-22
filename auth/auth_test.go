@@ -1,13 +1,14 @@
 package auth
 
 import (
+	"errors"
 	"testing"
 )
 
 func TestPasswordPolicy(t *testing.T) {
 	candidate := "short"
 	got := CheckPasswordPolicy(candidate)
-	if got != ErrPasswordTooShort {
+	if !errors.Is(got, ErrPasswordTooShort) {
 		t.Fatalf("unexpected error received. expected %v got %v", ErrPasswordTooShort, got)
 	}
 
@@ -28,14 +29,14 @@ func TestValidatePasswordChange(t *testing.T) {
 	}
 
 	_, got := ValidatePasswordChange(currentHash, newPassword, confirmPassword)
-	if got != ErrPasswordMismatch {
+	if !errors.Is(got, ErrPasswordMismatch) {
 		t.Fatalf("unexpected error received. expected %v got %v", ErrPasswordMismatch, got)
 	}
 
 	newPassword = currentPassword
 	confirmPassword = newPassword
 	_, got = ValidatePasswordChange(currentHash, newPassword, confirmPassword)
-	if got != ErrReusedPassword {
+	if !errors.Is(got, ErrReusedPassword) {
 		t.Fatalf("unexpected error received. expected %v got %v", ErrReusedPassword, got)
 	}
 }
