@@ -42,7 +42,7 @@ type TransparencyResponse struct {
 // to return a transparency response.
 const TransparencySuffix = "+"
 
-// PhishingServerOption is a functional option that is used to configure the
+// PhishingServerOption is a functional option that is used to configure
 // the phishing server
 type PhishingServerOption func(*PhishingServer)
 
@@ -73,14 +73,6 @@ func NewPhishingServer(config config.PhishServer, options ...PhishingServerOptio
 	return ps
 }
 
-// WithContactAddress sets the contact address used by the transparency
-// handlers
-func WithContactAddress(addr string) PhishingServerOption {
-	return func(ps *PhishingServer) {
-		ps.contactAddress = addr
-	}
-}
-
 // Start launches the phishing server, listening on the configured address.
 func (ps *PhishingServer) Start() {
 	if ps.config.UseTLS {
@@ -98,11 +90,11 @@ func (ps *PhishingServer) Start() {
 	log.Fatal(ps.server.ListenAndServe())
 }
 
-// Shutdown attempts to gracefully shutdown the server.
+// Shutdown attempts to gracefully shut down the server.
 func (ps *PhishingServer) Shutdown() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	return ps.server.Shutdown(ctx)
+	return ps.server.Shutdown(ctxTimeout)
 }
 
 // CreatePhishingRouter creates the router that handles phishing connections.
@@ -135,7 +127,7 @@ func (ps *PhishingServer) TrackHandler(w http.ResponseWriter, r *http.Request) {
 	r, err := setupContext(r)
 	if err != nil {
 		// Log the error if it wasn't something we can safely ignore
-		if err != ErrInvalidRequest && err != ErrCampaignComplete {
+		if !errors.Is(err, ErrInvalidRequest) && !errors.Is(err, ErrCampaignComplete) {
 			log.Error(err)
 		}
 		http.NotFound(w, r)
@@ -169,7 +161,7 @@ func (ps *PhishingServer) ReportHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Access-Control-Allow-Origin", "*") // To allow Chrome extensions (or other pages) to report a campaign without violating CORS
 	if err != nil {
 		// Log the error if it wasn't something we can safely ignore
-		if err != ErrInvalidRequest && err != ErrCampaignComplete {
+		if !errors.Is(err, ErrInvalidRequest) && !errors.Is(err, ErrCampaignComplete) {
 			log.Error(err)
 		}
 		http.NotFound(w, r)
@@ -203,7 +195,7 @@ func (ps *PhishingServer) PhishHandler(w http.ResponseWriter, r *http.Request) {
 	r, err := setupContext(r)
 	if err != nil {
 		// Log the error if it wasn't something we can safely ignore
-		if err != ErrInvalidRequest && err != ErrCampaignComplete {
+		if !errors.Is(err, ErrInvalidRequest) && !errors.Is(err, ErrCampaignComplete) {
 			log.Error(err)
 		}
 		http.NotFound(w, r)
@@ -290,12 +282,18 @@ func renderPhishResponse(w http.ResponseWriter, r *http.Request, ptx models.Phis
 		http.NotFound(w, r)
 		return
 	}
-	w.Write([]byte(html))
+	_, err = w.Write([]byte(html))
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // RobotsHandler prevents search engines, etc. from indexing phishing materials
-func (ps *PhishingServer) RobotsHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "User-agent: *\nDisallow: /")
+func (ps *PhishingServer) RobotsHandler(w http.ResponseWriter, _ *http.Request) {
+	_, err := fmt.Fprintln(w, "User-agent: *\nDisallow: /")
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // TransparencyHandler returns a TransparencyResponse for the provided result
@@ -310,7 +308,7 @@ func (ps *PhishingServer) TransparencyHandler(w http.ResponseWriter, r *http.Req
 	api.JSONResponse(w, tr, http.StatusOK)
 }
 
-// setupContext handles some of the administrative work around receiving a new
+// setupContext handles some of the administrative workaround receiving a new
 // request, such as checking the result ID, the campaign, etc.
 func setupContext(r *http.Request) (*http.Request, error) {
 	err := r.ParseForm()
@@ -362,7 +360,7 @@ func setupContext(r *http.Request) (*http.Request, error) {
 	if err != nil {
 		ip = r.RemoteAddr
 	}
-	// Handle post processing such as GeoIP
+	// Handle post-processing such as GeoIP
 	err = rs.UpdateGeo(ip)
 	if err != nil {
 		log.Error(err)
