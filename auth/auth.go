@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	log "github.com/gophish/gophish/logger"
 	"io"
 
 	"golang.org/x/crypto/bcrypt"
@@ -15,11 +16,7 @@ const MinPasswordLength = 8
 // APIKeyLength is the length of Gophish API keys
 const APIKeyLength = 32
 
-// ErrInvalidPassword is thrown when a user provides an incorrect password.
-var ErrInvalidPassword = errors.New("Invalid Password")
-
-// ErrPasswordMismatch is thrown when a user provides a mismatching password
-// and confirmation password.
+// ErrPasswordMismatch Password confirmation.
 var ErrPasswordMismatch = errors.New("Passwords do not match")
 
 // ErrReusedPassword is thrown when a user attempts to change their password to
@@ -38,7 +35,11 @@ var ErrPasswordTooShort = fmt.Errorf("Password must be at least %d characters", 
 // random bytes
 func GenerateSecureKey(n int) string {
 	k := make([]byte, n)
-	io.ReadFull(rand.Reader, k)
+	_, err := io.ReadFull(rand.Reader, k)
+	if err != nil {
+		log.Error(err)
+		return ""
+	}
 	return fmt.Sprintf("%x", k)
 }
 
@@ -82,7 +83,7 @@ func ValidatePassword(password string, hash string) error {
 // Note that this assumes the current password has been confirmed by the
 // caller.
 //
-// If all of the provided data is valid, then the hash of the new password is
+// If all the provided data is valid, then the hash of the new password is
 // returned.
 func ValidatePasswordChange(currentHash, newPassword, confirmPassword string) (string, error) {
 	// Ensure the new password passes our password policy
