@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	log "github.com/gophish/gophish/logger"
+	log "github.com/vigilans-co/gophish/logger"
 	"io"
 
 	"golang.org/x/crypto/bcrypt"

@@ -2,7 +2,7 @@ package dialer
 
 import (
 	"fmt"
-	"github.com/gophish/gophish/logger"
+	"github.com/vigilans-co/gophish/logger"
 	"net"
 	"syscall"
 	"time"

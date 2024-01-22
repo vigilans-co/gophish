@@ -4,7 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/base64"
-	log "github.com/gophish/gophish/logger"
+	log "github.com/vigilans-co/gophish/logger"
 	"io"
 	"net/url"
 	"path/filepath"

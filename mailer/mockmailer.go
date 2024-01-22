@@ -3,7 +3,7 @@ package mailer
 import (
 	"bytes"
 	"errors"
-	log "github.com/gophish/gophish/logger"
+	log "github.com/vigilans-co/gophish/logger"
 	"io"
 	"time"
 

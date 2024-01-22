@@ -5,10 +5,10 @@ import (
 	"net/url"
 	"time"
 
-	log "github.com/gophish/gophish/logger"
-	"github.com/gophish/gophish/webhook"
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
+	log "github.com/vigilans-co/gophish/logger"
+	"github.com/vigilans-co/gophish/webhook"
 )
 
 // Campaign is a struct representing a created campaign

@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	log "github.com/gophish/gophish/logger"
-	"github.com/gophish/gophish/mailer"
-	"github.com/gophish/gophish/models"
 	"github.com/sirupsen/logrus"
+	log "github.com/vigilans-co/gophish/logger"
+	"github.com/vigilans-co/gophish/mailer"
+	"github.com/vigilans-co/gophish/models"
 )
 
 // Worker is an interface that defines the operations needed for a background worker

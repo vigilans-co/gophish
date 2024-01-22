@@ -3,13 +3,13 @@ package middleware
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/gophish/gophish/logger"
+	log "github.com/vigilans-co/gophish/logger"
 	"net/http"
 	"strings"
 
-	ctx "github.com/gophish/gophish/context"
-	"github.com/gophish/gophish/models"
 	"github.com/gorilla/csrf"
+	ctx "github.com/vigilans-co/gophish/context"
+	"github.com/vigilans-co/gophish/models"
 )
 
 // CSRFExemptPrefixes are a list of routes that are exempt from CSRF protection
