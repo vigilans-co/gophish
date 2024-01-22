@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -32,18 +33,18 @@ func (as *Server) Templates(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_, err = models.GetTemplateByName(t.Name, ctx.Get(r, "user_id").(int64))
-		if err != gorm.ErrRecordNotFound {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			JSONResponse(w, models.Response{Success: false, Message: "Template name already in use"}, http.StatusConflict)
 			return
 		}
 		t.ModifiedDate = time.Now().UTC()
 		t.UserId = ctx.Get(r, "user_id").(int64)
 		err = models.PostTemplate(&t)
-		if err == models.ErrTemplateNameNotSpecified {
+		if errors.Is(err, models.ErrTemplateNameNotSpecified) {
 			JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusBadRequest)
 			return
 		}
-		if err == models.ErrTemplateMissingParameter {
+		if errors.Is(err, models.ErrTemplateMissingParameter) {
 			JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusBadRequest)
 			return
 		}

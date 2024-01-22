@@ -109,12 +109,12 @@ func TestSuccessfulRedirect(t *testing.T) {
 	if got != expected {
 		t.Fatalf("invalid status code received. expected %d got %d", expected, got)
 	}
-	url, err := resp.Location()
+	urlLocation, err := resp.Location()
 	if err != nil {
 		t.Fatalf("error parsing response Location header: %v", err)
 	}
-	if url.Path != next {
-		t.Fatalf("unexpected Location header received. expected %s got %s", next, url.Path)
+	if urlLocation.Path != next {
+		t.Fatalf("unexpected Location header received. expected %s got %s", next, urlLocation.Path)
 	}
 }
 

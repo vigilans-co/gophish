@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -34,7 +35,7 @@ func (as *Server) Groups(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_, err = models.GetGroupByName(g.Name, ctx.Get(r, "user_id").(int64))
-		if err != gorm.ErrRecordNotFound {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			JSONResponse(w, models.Response{Success: false, Message: "Group name already in use"}, http.StatusConflict)
 			return
 		}

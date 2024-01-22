@@ -57,7 +57,7 @@ func (ur *userRequest) Validate(existingUser *models.User) error {
 		}
 	}
 	// If we have an error which is not simply indicating that no user was found, report it
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 	return nil

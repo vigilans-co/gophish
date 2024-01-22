@@ -18,5 +18,8 @@ func JSONResponse(w http.ResponseWriter, d interface{}, c int) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(c)
-	fmt.Fprintf(w, "%s", dj)
+	_, err = fmt.Fprintf(w, "%s", dj)
+	if err != nil {
+		log.Error(err)
+	}
 }

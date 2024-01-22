@@ -15,7 +15,7 @@ type ServerOption func(*Server)
 
 // Server represents the routes and functionality of the Gophish API.
 // It's not a server in the traditional sense, in that it isn't started and
-// stopped. Rather, it's meant to be used as an http.Handler in the
+// stopped. Rather, it's meant to be used as a http.Handler in the
 // AdminServer.
 type Server struct {
 	handler http.Handler

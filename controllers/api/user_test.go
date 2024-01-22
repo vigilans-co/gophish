@@ -45,7 +45,7 @@ func TestGetUsers(t *testing.T) {
 		t.Fatalf("unexpected error code received. expected %d got %d", expected, w.Code)
 	}
 
-	got := []models.User{}
+	var got []models.User
 	err := json.NewDecoder(w.Body).Decode(&got)
 	if err != nil {
 		t.Fatalf("error decoding users data: %v", err)
@@ -155,7 +155,7 @@ func TestUnauthorizedListUsers(t *testing.T) {
 	unauthorizedUser := createUnpriviledgedUser(t, models.RoleUser)
 	// We'll try to make a request to the various users API endpoints to
 	// ensure that they fail. Previously, we could hit the handlers directly
-	// but we need to go through the router for this test to ensure the
+	// but, we need to go through the router for this test to ensure the
 	// middleware gets applied.
 	r := httptest.NewRequest(http.MethodGet, "/api/users/", nil)
 	r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", unauthorizedUser.ApiKey))
@@ -222,7 +222,7 @@ func TestUnauthorizedSetRole(t *testing.T) {
 }
 
 // TestModifyWithExistingUsername verifies that it's not possible to modify
-// an user's username to one which already exists.
+// a user's username to one which already exists.
 func TestModifyWithExistingUsername(t *testing.T) {
 	testCtx := setupTest(t)
 	unauthorizedUser := createUnpriviledgedUser(t, models.RoleUser)

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -33,7 +34,7 @@ func (as *Server) SendingProfiles(w http.ResponseWriter, r *http.Request) {
 		}
 		// Check to make sure the name is unique
 		_, err = models.GetSMTPByName(s.Name, ctx.Get(r, "user_id").(int64))
-		if err != gorm.ErrRecordNotFound {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			JSONResponse(w, models.Response{Success: false, Message: "SMTP name already in use"}, http.StatusConflict)
 			log.Error(err)
 			return
@@ -50,7 +51,7 @@ func (as *Server) SendingProfiles(w http.ResponseWriter, r *http.Request) {
 }
 
 // SendingProfile contains functions to handle the GET'ing, DELETE'ing, and PUT'ing
-// of a SMTP object
+// of an SMTP object
 func (as *Server) SendingProfile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, _ := strconv.ParseInt(vars["id"], 0, 64)

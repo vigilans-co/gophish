@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	log "github.com/gophish/gophish/logger"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -51,7 +52,10 @@ func TestDefaultAllowedImport(t *testing.T) {
 	ctx := setupTest(t)
 	h := "<html><head></head><body><img src=\"/test.png\"/></body></html>"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, h)
+		_, err := fmt.Fprintln(w, h)
+		if err != nil {
+			log.Error(err)
+		}
 	}))
 	defer ts.Close()
 	response := makeImportRequest(ctx, []string{}, ts.URL)
@@ -65,7 +69,10 @@ func TestCustomDeniedImport(t *testing.T) {
 	ctx := setupTest(t)
 	h := "<html><head></head><body><img src=\"/test.png\"/></body></html>"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, h)
+		_, err := fmt.Fprintln(w, h)
+		if err != nil {
+			log.Error(err)
+		}
 	}))
 	defer ts.Close()
 	response := makeImportRequest(ctx, []string{"192.168.1.1"}, ts.URL)

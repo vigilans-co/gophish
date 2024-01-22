@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -108,7 +109,7 @@ func (as *Server) CampaignSummary(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "GET":
 		cs, err := models.GetCampaignSummary(id, ctx.Get(r, "user_id").(int64))
 		if err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				JSONResponse(w, models.Response{Success: false, Message: "Campaign not found"}, http.StatusNotFound)
 			} else {
 				JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
