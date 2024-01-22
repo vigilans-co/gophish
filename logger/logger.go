@@ -56,7 +56,7 @@ func Debug(args ...interface{}) {
 	Logger.Debug(args...)
 }
 
-// Debugf logs a formatted debug messsage
+// Debugf logs a formatted debug message
 func Debugf(format string, args ...interface{}) {
 	Logger.Debugf(format, args...)
 }
@@ -101,7 +101,7 @@ func Fatalf(format string, args ...interface{}) {
 	Logger.Fatalf(format, args...)
 }
 
-// WithFields returns a new log enty with the provided fields
+// WithFields returns a new log entry with the provided fields
 func WithFields(fields logrus.Fields) *logrus.Entry {
 	return Logger.WithFields(fields)
 }

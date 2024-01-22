@@ -4,7 +4,7 @@ package imap
 *		 - Have a counter per config for number of consecutive login errors and backoff (e.g if supplied creds are incorrect)
 *		 - Have a DB field "last_login_error" if last login failed
 *		 - DB counter for non-campaign emails that the admin should investigate
-*		 - Add field to User for numner of non-campaign emails reported
+*		 - Add field to User for number of non-campaign emails reported
  */
 import (
 	"bytes"
@@ -116,7 +116,8 @@ func (im *Monitor) Shutdown() error {
 }
 
 // checkForNewEmails logs into an IMAP account and checks unread emails
-//  for the rid campaign identifier.
+//
+//	for the rid campaign identifier.
 func checkForNewEmails(im models.IMAP) {
 	im.Host = im.Host + ":" + strconv.Itoa(int(im.Port)) // Append port
 	mailServer := Mailbox{

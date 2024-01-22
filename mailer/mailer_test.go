@@ -47,11 +47,13 @@ func TestDialHost(t *testing.T) {
 	md := newMockDialer()
 	md.setDial(md.unreachableDial)
 	_, err := dialHost(ctx, md)
-	if _, ok := err.(*ErrMaxConnectAttempts); !ok {
+	var errMaxConnectAttempts *ErrMaxConnectAttempts
+	if !errors.As(err, &errMaxConnectAttempts) {
 		t.Fatalf("Didn't receive expected ErrMaxConnectAttempts. Got: %s", err)
 	}
-	e := err.(*ErrMaxConnectAttempts)
-	if e.underlyingError != errHostUnreachable {
+	var e *ErrMaxConnectAttempts
+	errors.As(err, &e)
+	if !errors.Is(e.underlyingError, errHostUnreachable) {
 		t.Fatalf("Got invalid underlying error. Expected %s Got %s\n", e.underlyingError, errHostUnreachable)
 	}
 	if md.dialCount != MaxReconnectAttempts {
@@ -84,7 +86,7 @@ func TestMailWorkerStart(t *testing.T) {
 	// Send the campaign
 	mw.Queue(messages)
 
-	got := []*mockMessage{}
+	var got []*mockMessage
 
 	idx := 0
 	for message := range sender.messageChan {
@@ -125,7 +127,7 @@ func TestBackoff(t *testing.T) {
 	// Send the campaign
 	mw.Queue(messages)
 
-	got := []*mockMessage{}
+	var got []*mockMessage
 
 	for message := range sender.messageChan {
 		got = append(got, message)
@@ -179,7 +181,7 @@ func TestPermError(t *testing.T) {
 	// Send the campaign
 	mw.Queue(messages)
 
-	got := []*mockMessage{}
+	var got []*mockMessage
 
 	for message := range sender.messageChan {
 		got = append(got, message)
@@ -238,7 +240,7 @@ func TestUnknownError(t *testing.T) {
 	// Send the campaign
 	mw.Queue(messages)
 
-	got := []*mockMessage{}
+	var got []*mockMessage
 
 	for message := range sender.messageChan {
 		got = append(got, message)
@@ -260,8 +262,8 @@ func TestUnknownError(t *testing.T) {
 	// If we get an unexpected error, this means that it's likely the
 	// underlying connection dropped. When this happens, we expect the
 	// connection to be re-established (see #997).
-	// In this case, we're successfully reestablishing the connection
-	// so we expect the backoff to occur.
+	// In this case, we're successfully re-establishing the connection
+	// ,so we expect the backoff to occur.
 	expectedBackoffCount := 1
 	backoffCount := message.backoffCount
 	if backoffCount != expectedBackoffCount {

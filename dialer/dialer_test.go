@@ -2,6 +2,7 @@ package dialer
 
 import (
 	"fmt"
+	log "github.com/gophish/gophish/logger"
 	"net"
 	"strings"
 	"syscall"
@@ -57,7 +58,10 @@ func TestCustomDeny(t *testing.T) {
 func TestSingleIP(t *testing.T) {
 	orig := DefaultDialer.AllowedHosts()
 	host := "127.0.0.1"
-	DefaultDialer.SetAllowedHosts([]string{host})
+	err := DefaultDialer.SetAllowedHosts([]string{host})
+	if err != nil {
+		log.Error(err)
+	}
 	control := DefaultDialer.Dialer().Control
 	conn := new(syscall.RawConn)
 	expected := fmt.Errorf("upstream connection denied to internal host at %s", host)
@@ -67,7 +71,10 @@ func TestSingleIP(t *testing.T) {
 	}
 
 	host = "::1"
-	DefaultDialer.SetAllowedHosts([]string{host})
+	err = DefaultDialer.SetAllowedHosts([]string{host})
+	if err != nil {
+		log.Error(err)
+	}
 	control = DefaultDialer.Dialer().Control
 	conn = new(syscall.RawConn)
 	expected = fmt.Errorf("upstream connection denied to internal host at %s", host)
@@ -81,5 +88,8 @@ func TestSingleIP(t *testing.T) {
 	if got != nil {
 		t.Fatalf("error dialing allowed host. got %v", got)
 	}
-	DefaultDialer.SetAllowedHosts(orig)
+	err = DefaultDialer.SetAllowedHosts(orig)
+	if err != nil {
+		log.Error(err)
+	}
 }

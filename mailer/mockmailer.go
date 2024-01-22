@@ -3,6 +3,7 @@ package mailer
 import (
 	"bytes"
 	"errors"
+	log "github.com/gophish/gophish/logger"
 	"io"
 	"time"
 
@@ -113,7 +114,10 @@ type mockMessage struct {
 
 func newMockMessage(from string, to []string, msg io.WriterTo) *mockMessage {
 	buff := &bytes.Buffer{}
-	msg.WriteTo(buff)
+	_, err := msg.WriteTo(buff)
+	if err != nil {
+		log.Error(err)
+	}
 	mm := &mockMessage{
 		from:    from,
 		to:      to,

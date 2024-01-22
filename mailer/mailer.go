@@ -102,7 +102,10 @@ func (mw *MailWorker) Queue(ms []Mail) {
 // in the case that an unrecoverable error occurs.
 func errorMail(err error, ms []Mail) {
 	for _, m := range ms {
-		m.Error(err)
+		err := m.Error(err)
+		if err != nil {
+			log.Error(err)
+		}
 	}
 }
 
@@ -136,7 +139,7 @@ func dialHost(ctx context.Context, dialer Dialer) (Sender, error) {
 }
 
 // sendMail attempts to send the provided Mail instances.
-// If the context is cancelled before all of the mail are sent,
+// If the context is cancelled before all the mail are sent,
 // sendMail just returns and does not modify those emails.
 func sendMail(ctx context.Context, dialer Dialer, ms []Mail) {
 	sender, err := dialHost(ctx, dialer)
@@ -145,7 +148,12 @@ func sendMail(ctx context.Context, dialer Dialer, ms []Mail) {
 		errorMail(err, ms)
 		return
 	}
-	defer sender.Close()
+	defer func(sender Sender) {
+		err := sender.Close()
+		if err != nil {
+			log.Error(err)
+		}
+	}(sender)
 	message := gomail.NewMessage()
 	for i, m := range ms {
 		select {
@@ -158,17 +166,23 @@ func sendMail(ctx context.Context, dialer Dialer, ms []Mail) {
 		err = m.Generate(message)
 		if err != nil {
 			log.Warn(err)
-			m.Error(err)
+			err := m.Error(err)
+			if err != nil {
+				log.Error(err)
+			}
 			continue
 		}
 
-		smtp_from, err := m.GetSmtpFrom()
+		smtpFrom, err := m.GetSmtpFrom()
 		if err != nil {
-			m.Error(err)
+			err := m.Error(err)
+			if err != nil {
+				log.Error(err)
+			}
 			continue
 		}
 
-		err = gomail.SendCustomFrom(sender, smtp_from, message)
+		err = gomail.SendCustomFrom(sender, smtpFrom, message)
 		if err != nil {
 			if te, ok := err.(*textproto.Error); ok {
 				switch {
@@ -180,8 +194,14 @@ func sendMail(ctx context.Context, dialer Dialer, ms []Mail) {
 						"code":  te.Code,
 						"email": message.GetHeader("To")[0],
 					}).Warn(err)
-					m.Backoff(err)
-					sender.Reset()
+					err := m.Backoff(err)
+					if err != nil {
+						log.Error(err)
+					}
+					err = sender.Reset()
+					if err != nil {
+						log.Error(err)
+					}
 					continue
 				// Otherwise, if it's a permanent error, we shouldn't backoff this message,
 				// since the RFC specifies that running the same commands won't work next time.
@@ -191,8 +211,14 @@ func sendMail(ctx context.Context, dialer Dialer, ms []Mail) {
 						"code":  te.Code,
 						"email": message.GetHeader("To")[0],
 					}).Warn(err)
-					m.Error(err)
-					sender.Reset()
+					err := m.Error(err)
+					if err != nil {
+						log.Error(err)
+					}
+					err = sender.Reset()
+					if err != nil {
+						log.Error(err)
+					}
 					continue
 				// If something else happened, let's just error out and reset the
 				// sender
@@ -201,8 +227,14 @@ func sendMail(ctx context.Context, dialer Dialer, ms []Mail) {
 						"code":  "unknown",
 						"email": message.GetHeader("To")[0],
 					}).Warn(err)
-					m.Error(err)
-					sender.Reset()
+					err := m.Error(err)
+					if err != nil {
+						log.Error(err)
+					}
+					err = sender.Reset()
+					if err != nil {
+						log.Error(err)
+					}
 					continue
 				}
 			} else {
@@ -218,15 +250,21 @@ func sendMail(ctx context.Context, dialer Dialer, ms []Mail) {
 					errorMail(err, ms[i:])
 					break
 				}
-				m.Backoff(origErr)
+				err := m.Backoff(origErr)
+				if err != nil {
+					log.Error(err)
+				}
 				continue
 			}
 		}
 		log.WithFields(logrus.Fields{
-			"smtp_from":     smtp_from,
+			"smtp_from":     smtpFrom,
 			"envelope_from": message.GetHeader("From")[0],
 			"email":         message.GetHeader("To")[0],
 		}).Info("Email sent")
-		m.Success()
+		err = m.Success()
+		if err != nil {
+			log.Error(err)
+		}
 	}
 }

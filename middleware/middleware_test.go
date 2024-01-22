@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	log "github.com/gophish/gophish/logger"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,7 +13,10 @@ import (
 )
 
 var successHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("success"))
+	_, err := w.Write([]byte("success"))
+	if err != nil {
+		log.Error(err)
+	}
 })
 
 type testContext struct {
@@ -34,9 +38,9 @@ func setupTest(t *testing.T) *testContext {
 	if err != nil {
 		t.Fatalf("error getting user: %v", err)
 	}
-	ctx := &testContext{}
-	ctx.apiKey = u.ApiKey
-	return ctx
+	ctxTest := &testContext{}
+	ctxTest.apiKey = u.ApiKey
+	return ctxTest
 }
 
 // MiddlewarePermissionTest maps an expected HTTP Method to an expected HTTP
@@ -48,7 +52,7 @@ type MiddlewarePermissionTest map[string]int
 func TestEnforceViewOnly(t *testing.T) {
 	setupTest(t)
 	permissionTests := map[string]MiddlewarePermissionTest{
-		models.RoleAdmin: MiddlewarePermissionTest{
+		models.RoleAdmin: {
 			http.MethodGet:     http.StatusOK,
 			http.MethodHead:    http.StatusOK,
 			http.MethodOptions: http.StatusOK,
@@ -56,7 +60,7 @@ func TestEnforceViewOnly(t *testing.T) {
 			http.MethodPut:     http.StatusOK,
 			http.MethodDelete:  http.StatusOK,
 		},
-		models.RoleUser: MiddlewarePermissionTest{
+		models.RoleUser: {
 			http.MethodGet:     http.StatusOK,
 			http.MethodHead:    http.StatusOK,
 			http.MethodOptions: http.StatusOK,

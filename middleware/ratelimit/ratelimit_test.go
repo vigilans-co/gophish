@@ -1,13 +1,17 @@
 package ratelimit
 
 import (
+	log "github.com/gophish/gophish/logger"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
 var successHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("ok"))
+	_, err := w.Write([]byte("ok"))
+	if err != nil {
+		log.Error(err)
+	}
 })
 
 func reachLimit(t *testing.T, handler http.Handler, limit int) {

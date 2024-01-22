@@ -3,6 +3,7 @@ package middleware
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/gophish/gophish/logger"
 	"net/http"
 	"strings"
 
@@ -82,7 +83,10 @@ func RequireAPIKey(handler http.Handler) http.Handler {
 			w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
 			return
 		}
-		r.ParseForm()
+		err := r.ParseForm()
+		if err != nil {
+			log.Error(err)
+		}
 		ak := r.Form.Get("api_key")
 		// If we can't get the API key, we'll also check for the
 		// Authorization Bearer token
@@ -193,5 +197,8 @@ func JSONError(w http.ResponseWriter, c int, m string) {
 	cj, _ := json.MarshalIndent(models.Response{Success: false, Message: m}, "", "  ")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(c)
-	fmt.Fprintf(w, "%s", cj)
+	_, err := fmt.Fprintf(w, "%s", cj)
+	if err != nil {
+		log.Error(err)
+	}
 }

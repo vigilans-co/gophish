@@ -2,6 +2,7 @@ package dialer
 
 import (
 	"fmt"
+	"github.com/gophish/gophish/logger"
 	"net"
 	"syscall"
 	"time"
@@ -19,12 +20,15 @@ var DefaultDialer = &RestrictedDialer{}
 // SetAllowedHosts sets the list of allowed hosts or IP ranges for the default
 // dialer.
 func SetAllowedHosts(allowed []string) {
-	DefaultDialer.SetAllowedHosts(allowed)
+	err := DefaultDialer.SetAllowedHosts(allowed)
+	if err != nil {
+		logger.Error(err)
+	}
 }
 
 // AllowedHosts returns the configured hosts that are allowed for the dialer.
 func (d *RestrictedDialer) AllowedHosts() []string {
-	ranges := []string{}
+	var ranges []string
 	for _, ipRange := range d.allowedHosts {
 		ranges = append(ranges, ipRange.String())
 	}
