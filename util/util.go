@@ -10,8 +10,8 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/big"
+	"mime/multipart"
 	"net/http"
 	"net/mail"
 	"os"
@@ -38,7 +38,7 @@ func ParseMail(r *http.Request) (email.Email, error) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	body, err := ioutil.ReadAll(m.Body)
+	body, err := io.ReadAll(m.Body)
 	e.HTML = body
 	return e, err
 }
@@ -46,7 +46,7 @@ func ParseMail(r *http.Request) (email.Email, error) {
 // ParseCSV contains the logic to parse the user provided csv file containing Target entries
 func ParseCSV(r *http.Request) ([]models.Target, error) {
 	mr, err := r.MultipartReader()
-	ts := []models.Target{}
+	var ts []models.Target
 	if err != nil {
 		return ts, err
 	}
@@ -59,7 +59,12 @@ func ParseCSV(r *http.Request) ([]models.Target, error) {
 		if part.FileName() == "" {
 			continue
 		}
-		defer part.Close()
+		defer func(part *multipart.Part) {
+			err := part.Close()
+			if err != nil {
+				log.Error(err)
+			}
+		}(part)
 		reader := csv.NewReader(part)
 		reader.TrimLeadingSpace = true
 		record, err := reader.Read()
@@ -124,7 +129,7 @@ func ParseCSV(r *http.Request) ([]models.Target, error) {
 	return ts, nil
 }
 
-// CheckAndCreateSSL is a helper to setup self-signed certificates for the administrative interface.
+// CheckAndCreateSSL is a helper to set up self-signed certificates for the administrative interface.
 func CheckAndCreateSSL(cp string, kp string) error {
 	// Check whether there is an existing SSL certificate and/or key, and if so, abort execution of this function
 	if _, err := os.Stat(cp); !os.IsNotExist(err) {
@@ -174,8 +179,14 @@ func CheckAndCreateSSL(cp string, kp string) error {
 	if err != nil {
 		return fmt.Errorf("tls certificate generation: failed to open %s for writing: %s", cp, err)
 	}
-	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
-	certOut.Close()
+	err = pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	if err != nil {
+		log.Error(err)
+	}
+	err = certOut.Close()
+	if err != nil {
+		log.Error(err)
+	}
 
 	keyOut, err := os.OpenFile(kp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
@@ -187,8 +198,14 @@ func CheckAndCreateSSL(cp string, kp string) error {
 		return fmt.Errorf("tls certificate generation: unable to marshal ECDSA private key: %v", err)
 	}
 
-	pem.Encode(keyOut, &pem.Block{Type: "EC PRIVATE KEY", Bytes: b})
-	keyOut.Close()
+	err = pem.Encode(keyOut, &pem.Block{Type: "EC PRIVATE KEY", Bytes: b})
+	if err != nil {
+		log.Error(err)
+	}
+	err = keyOut.Close()
+	if err != nil {
+		log.Error(err)
+	}
 
 	log.Info("TLS Certificate Generation complete")
 	return nil

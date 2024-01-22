@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
+	log "github.com/gophish/gophish/logger"
 	"testing"
 	"time"
 
@@ -15,7 +16,7 @@ type logMailer struct {
 	queue chan []mailer.Mail
 }
 
-func (m *logMailer) Start(ctx context.Context) {}
+func (m *logMailer) Start(_ context.Context) {}
 
 func (m *logMailer) Queue(ms []mailer.Mail) {
 	m.queue <- ms
@@ -42,7 +43,7 @@ func setupTest(t *testing.T) *testContext {
 	return ctx
 }
 
-func createTestData(t *testing.T, ctx *testContext) {
+func createTestData(_ *testing.T, ctx *testContext) {
 	ctx.config.TestFlag = true
 	// Add a group
 	group := models.Group{Name: "Test Group"}
@@ -54,7 +55,10 @@ func createTestData(t *testing.T, ctx *testContext) {
 				LastName:  "Example"}})
 	}
 	group.UserId = 1
-	models.PostGroup(&group)
+	err := models.PostGroup(&group)
+	if err != nil {
+		log.Error(err)
+	}
 
 	// Add a template
 	template := models.Template{Name: "Test Template"}
@@ -62,20 +66,29 @@ func createTestData(t *testing.T, ctx *testContext) {
 	template.Text = "Text text"
 	template.HTML = "<html>Test</html>"
 	template.UserId = 1
-	models.PostTemplate(&template)
+	err = models.PostTemplate(&template)
+	if err != nil {
+		log.Error(err)
+	}
 
 	// Add a landing page
 	p := models.Page{Name: "Test Page"}
 	p.HTML = "<html>Test</html>"
 	p.UserId = 1
-	models.PostPage(&p)
+	err = models.PostPage(&p)
+	if err != nil {
+		log.Error(err)
+	}
 
 	// Add a sending profile
 	smtp := models.SMTP{Name: "Test Page"}
 	smtp.UserId = 1
 	smtp.Host = "example.com"
 	smtp.FromAddress = "test@test.com"
-	models.PostSMTP(&smtp)
+	err = models.PostSMTP(&smtp)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 func setupCampaign(id int) (*models.Campaign, error) {
@@ -117,7 +130,7 @@ func setupCampaign(id int) (*models.Campaign, error) {
 func TestMailLogGrouping(t *testing.T) {
 	setupTest(t)
 
-	// Create the campaigns and unlock the maillogs so that they're picked up
+	// Create the campaigns and unlock the mail logs so that they're picked up
 	// by the worker
 	for i := 0; i < 10; i++ {
 		campaign, err := setupCampaign(i)
@@ -129,7 +142,10 @@ func TestMailLogGrouping(t *testing.T) {
 			t.Fatalf("error getting maillogs for campaign: %v", err)
 		}
 		for _, m := range ms {
-			m.Unlock()
+			err := m.Unlock()
+			if err != nil {
+				log.Error(err)
+			}
 		}
 	}
 
@@ -137,11 +153,14 @@ func TestMailLogGrouping(t *testing.T) {
 	worker := &DefaultWorker{}
 	worker.mailer = lm
 
-	// Trigger the worker, generating the maillogs and sending them to the
+	// Trigger the worker, generating the mail logs and sending them to the
 	// mailer
-	worker.processCampaigns(time.Now())
+	err := worker.processCampaigns(time.Now())
+	if err != nil {
+		log.Error(err)
+	}
 
-	// Verify that each slice of maillogs received belong to the same campaign
+	// Verify that each slice of mail logs received belong to the same campaign
 	for i := 0; i < 10; i++ {
 		ms := <-lm.queue
 		maillog, ok := ms[0].(*models.MailLog)

@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"fmt"
+	log "github.com/gophish/gophish/logger"
 	"mime/multipart"
 	"net/http"
 	"reflect"
@@ -19,8 +20,14 @@ func buildCSVRequest(csvPayload string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	part.Write([]byte(csvHeader))
-	part.Write([]byte(csvPayload))
+	_, err = part.Write([]byte(csvHeader))
+	if err != nil {
+		log.Error(err)
+	}
+	_, err = part.Write([]byte(csvPayload))
+	if err != nil {
+		log.Error(err)
+	}
 	err = writer.Close()
 	if err != nil {
 		return nil, err

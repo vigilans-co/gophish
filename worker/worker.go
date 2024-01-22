@@ -37,7 +37,7 @@ func New(options ...func(Worker) error) (Worker, error) {
 }
 
 // WithMailer sets the mailer for a given worker.
-// By default, workers use a standard, default mailworker.
+// By default, workers use a standard, default mail worker.
 func WithMailer(m mailer.Mailer) func(*DefaultWorker) error {
 	return func(w *DefaultWorker) error {
 		w.mailer = m
@@ -75,7 +75,10 @@ func (w *DefaultWorker) processCampaigns(t time.Time) error {
 			}
 			campaignCache[c.Id] = c
 		}
-		m.CacheCampaign(&c)
+		err := m.CacheCampaign(&c)
+		if err != nil {
+			log.Error(err)
+		}
 		msg[m.CampaignId] = append(msg[m.CampaignId], m)
 	}
 
@@ -120,10 +123,13 @@ func (w *DefaultWorker) LaunchCampaign(c models.Campaign) {
 		log.Error(err)
 		return
 	}
-	models.LockMailLogs(ms, true)
+	err = models.LockMailLogs(ms, true)
+	if err != nil {
+		log.Error(err)
+	}
 	// This is required since you cannot pass a slice of values
 	// that implements an interface as a slice of that interface.
-	mailEntries := []mailer.Mail{}
+	var mailEntries []mailer.Mail
 	currentTime := time.Now().UTC()
 	campaignMailCtx, err := models.GetCampaignMailContext(c.Id, c.UserId)
 	if err != nil {
@@ -134,7 +140,10 @@ func (w *DefaultWorker) LaunchCampaign(c models.Campaign) {
 		// Only send the emails scheduled to be sent for the past minute to
 		// respect the campaign scheduling options
 		if m.SendDate.After(currentTime) {
-			m.Unlock()
+			err := m.Unlock()
+			if err != nil {
+				log.Error(err)
+			}
 			continue
 		}
 		err = m.CacheCampaign(&campaignMailCtx)

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -72,7 +73,10 @@ func Send(endPoint EndPoint, data interface{}) error {
 func SendAll(endPoints []EndPoint, data interface{}) {
 	for _, e := range endPoints {
 		go func(e EndPoint) {
-			senderInstance.Send(e, data)
+			err := senderInstance.Send(e, data)
+			if err != nil {
+				log.Error(err)
+			}
 		}(e)
 	}
 }
@@ -102,7 +106,12 @@ func (ds defaultSender) Send(endPoint EndPoint, data interface{}) error {
 		log.Error(err)
 		return err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Error(err)
+		}
+	}(resp.Body)
 
 	if resp.StatusCode >= MinHTTPStatusErrorCode {
 		errMsg := fmt.Sprintf("http status of response: %s", resp.Status)
