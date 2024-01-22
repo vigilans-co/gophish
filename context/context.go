@@ -24,4 +24,4 @@ func Set(r *http.Request, key, val interface{}) *http.Request {
 }
 
 // Clear is a null operation, since this is handled automatically in Go > 1.7
-func Clear(r *http.Request) {}
+func Clear(_ *http.Request) {}
